@@ -1,0 +1,47 @@
+# HER2 breast -- manuscript five-loss HERO-ST (lite5).
+
+seed: 0
+run_name: her2_breast_real_lite5_v1
+
+data:
+  source: hest
+  sample_ids: null
+  patch_resize: 224
+  n_top_genes: 512
+  n_marker_genes: 50
+  knn_k: 6
+  val_frac: 0.25
+  test_frac: 0.25
+
+model:
+  embed_dim: 256
+  backbone_name: phikon_v2
+  n_message_passing_layers: 2
+  spatial_scale: 3.0
+  graph_variant: adaptive
+  n_cross_attn_heads: 4
+  m2_nonneg_weights: true
+  m2_monotone_gate: true
+  m2_boundary_penalty_mode: dst
+  m2_use_edge_weighter: true
+  m2_use_node_gate: true
+
+loss:
+  contrastive_margin: 1.0
+  boundary_upweight: 3.0
+  w_m3_consistency: 1.0
+  w_m3_contrastive: 0.5
+  w_m4_contrastive: 1.0
+  w_m4_local_diff: 4.0
+
+train:
+  n_epochs: 30
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  device: auto
+
+eval:
+  zone_quantiles: [0.5, 0.85]
+  oversmoothing_inflation_threshold: 0.08
+  variance_collapse_ratio_threshold: 0.05
+  n_seeds: 5

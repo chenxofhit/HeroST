@@ -1,0 +1,7 @@
+# Minimal dependencies for the synthetic smoke test and core model.
+torch>=2.2
+numpy>=1.26,<3.0
+scipy>=1.11
+pyyaml>=6.0
+
+# Install real-data support with: python -m pip install -e '.[real-data]'

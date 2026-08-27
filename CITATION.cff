@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use HERO-ST, please cite the software and associated manuscript."
+title: "HERO-ST"
+type: software
+authors:
+  - family-names: "Chen"
+    given-names: "Xiang"
+version: 0.1.0
+repository-code: "https://github.com/chenxofhit/HeroST"
+keywords:
+  - spatial transcriptomics
+  - computational pathology
+  - gene-expression prediction
+  - graph neural network
