@@ -37,6 +37,10 @@ at inference. The manuscript objective has exactly five terms:
 | Local-difference (`L_ld`) | Preserve expression jumps on graph edges | 4.0 |
 
 Only these five terms are implemented in the released training loop.
+The destination gate (`m2_gate_side: dst`) is the default. Source-side or
+symmetric gates, and an optional teacher-supervision term
+(`w_m3_teacher_supervision`, default 0), are available for sensitivity
+checks and are off unless set in the config.
 
 ## Quick start
 

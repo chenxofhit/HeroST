@@ -136,6 +136,7 @@ def build_model(cfg: Dict, n_genes: int) -> HeroSTModel:
         m2_boundary_penalty_mode=m.get("m2_boundary_penalty_mode", "dst"),
         m2_use_edge_weighter=m.get("m2_use_edge_weighter", True),
         m2_use_node_gate=m.get("m2_use_node_gate", True),
+        m2_gate_side=m.get("m2_gate_side", "dst"),
     )
     model = HeroSTModel(model_cfg)
     cache_dir = os.environ.get("HEROST_FEATURE_CACHE")
@@ -171,6 +172,7 @@ def train_one_epoch(
             batch.expression,
             w_consistency=loss_cfg["w_m3_consistency"],
             w_contrastive=loss_cfg["w_m3_contrastive"],
+            w_teacher_supervision=loss_cfg.get("w_m3_teacher_supervision", 0.0),
         )
         m4_out = m4_core_losses(
             out.graph_embedding,

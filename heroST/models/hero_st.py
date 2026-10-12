@@ -35,6 +35,7 @@ class HeroSTConfig:
     m2_boundary_penalty_mode: str = "dst"
     m2_use_edge_weighter: bool = True
     m2_use_node_gate: bool = True
+    m2_gate_side: str = "dst"
     n_cross_attn_heads: int = 4
 
 
@@ -57,6 +58,7 @@ class HeroSTModel(nn.Module):
                 boundary_penalty_mode=cfg.m2_boundary_penalty_mode,
                 use_edge_weighter=cfg.m2_use_edge_weighter,
                 use_node_gate=cfg.m2_use_node_gate,
+                gate_side=cfg.m2_gate_side,
             )
         elif cfg.graph_variant == "fixed":
             self.m2 = FixedUniformGraphPropagator(dim=cfg.embed_dim, n_layers=cfg.n_message_passing_layers)

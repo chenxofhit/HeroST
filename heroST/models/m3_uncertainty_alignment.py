@@ -103,6 +103,7 @@ def m3_losses(
     contrastive_temperature: float = 0.1,
     w_consistency: float = 1.0,
     w_contrastive: float = 0.5,
+    w_teacher_supervision: float = 0.0,
 ) -> dict[str, torch.Tensor]:
     losses = {"heteroscedastic": heteroscedastic_nll(out.mu, out.log_var, target)}
     if out.mu_teacher is None or out.h_img is None or out.h_expr is None:
@@ -118,4 +119,7 @@ def m3_losses(
         + w_consistency * losses["consistency"]
         + w_contrastive * losses["contrastive"]
     )
+    if w_teacher_supervision > 0.0:
+        losses["teacher_supervision"] = F.mse_loss(out.mu_teacher, target)
+        losses["total"] = losses["total"] + w_teacher_supervision * losses["teacher_supervision"]
     return losses

@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 BoundaryPenaltyMode = Literal["both", "dst"]
+GateSide = Literal["dst", "src", "sym"]
 
 
 def _inv_softplus(y: torch.Tensor) -> torch.Tensor:
@@ -136,12 +137,21 @@ class AdaptiveMessagePassingLayer(nn.Module):
     disabled (strength == 1).
     """
 
-    def __init__(self, dim: int, monotone_gate: bool = False, use_node_gate: bool = True) -> None:
+    def __init__(
+        self,
+        dim: int,
+        monotone_gate: bool = False,
+        use_node_gate: bool = True,
+        gate_side: GateSide = "dst",
+    ) -> None:
         super().__init__()
+        if gate_side not in ("dst", "src", "sym"):
+            raise ValueError(f"Unknown gate_side: {gate_side!r}")
         self.message_proj = nn.Linear(dim, dim)
         self.update_proj = nn.Linear(dim * 2, dim)
         self.use_node_gate = use_node_gate
         self.monotone_gate = monotone_gate
+        self.gate_side = gate_side
         if use_node_gate:
             if monotone_gate:
                 # strength = sigmoid(-(softplus(slope) * b + bias)); slope >= 0
@@ -169,12 +179,20 @@ class AdaptiveMessagePassingLayer(nn.Module):
         src, dst = edge_index[0], edge_index[1]
         n, d = node_features.shape
         messages = self.message_proj(node_features)[src] * edge_weight.unsqueeze(-1)
+        if self.gate_side != "dst":
+            if self.gate_side == "src":
+                edge_gate = self.propagation_strength(boundaryness)[src]
+            else:
+                edge_gate = self.propagation_strength(0.5 * (boundaryness[src] + boundaryness[dst]))
+            messages = messages * edge_gate.unsqueeze(-1)
         aggregated = torch.zeros(n, d, device=node_features.device, dtype=node_features.dtype)
         aggregated.scatter_add_(0, dst.unsqueeze(-1).expand(-1, d), messages)
 
-        # propagation_strength in (0, 1): high boundaryness -> low strength
-        propagation_strength = self.propagation_strength(boundaryness)
-        gated_aggregated = aggregated * propagation_strength.unsqueeze(-1)
+        if self.gate_side == "dst":
+            # High boundaryness lowers incoming message mass at the destination.
+            gated_aggregated = aggregated * self.propagation_strength(boundaryness).unsqueeze(-1)
+        else:
+            gated_aggregated = aggregated
 
         updated = self.update_proj(torch.cat([node_features, gated_aggregated], dim=-1))
         return F.relu(updated) + node_features  # residual
@@ -191,6 +209,7 @@ class StructureAwareGraphPropagator(nn.Module):
         boundary_penalty_mode: BoundaryPenaltyMode = "both",
         use_edge_weighter: bool = True,
         use_node_gate: bool = True,
+        gate_side: GateSide = "dst",
     ) -> None:
         super().__init__()
         self.use_edge_weighter = use_edge_weighter
@@ -201,7 +220,9 @@ class StructureAwareGraphPropagator(nn.Module):
         )
         self.layers = nn.ModuleList(
             [
-                AdaptiveMessagePassingLayer(dim, monotone_gate=monotone_gate, use_node_gate=use_node_gate)
+                AdaptiveMessagePassingLayer(
+                    dim, monotone_gate=monotone_gate, use_node_gate=use_node_gate, gate_side=gate_side
+                )
                 for _ in range(n_layers)
             ]
         )
